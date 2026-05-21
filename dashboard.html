@@ -1,0 +1,896 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Instagram Automations Dashboard</title>
+    <style>
+        :root {
+            --primary: #833ab4;
+            --secondary: #fd1d1d;
+            --warning: #fcb045;
+            --bg: #121212;
+            --surface: #1e1e1e;
+            --text: #ffffff;
+            --text-secondary: #aaaaaa;
+            --border: #333333;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1000px;
+        }
+
+        h1 {
+            background: -webkit-linear-gradient(45deg, var(--warning), var(--secondary), var(--primary));
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            background: var(--surface);
+            padding: 20px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+        }
+
+        input, button {
+            padding: 10px 15px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            background: #2a2a2a;
+            color: white;
+            font-size: 14px;
+        }
+
+        input {
+            flex-grow: 1;
+        }
+
+        button {
+            background: var(--primary);
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.2s;
+            border: none;
+        }
+
+        button:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+        }
+
+        button.danger {
+            background: #dc3545;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .grid { grid-template-columns: 1fr; }
+        }
+
+        .card {
+            background: var(--surface);
+            border-radius: 12px;
+            padding: 20px;
+            border: 1px solid var(--border);
+            margin-bottom: 20px;
+        }
+
+        .card h2 { margin-top: 0; border-bottom: 1px solid var(--border); padding-bottom: 10px; }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: var(--text-secondary);
+            font-size: 12px;
+            text-transform: uppercase;
+        }
+
+        .form-group input, .form-group textarea {
+            width: 100%;
+            box-sizing: border-box;
+            background: #2a2a2a;
+            border: 1px solid var(--border);
+            color: white;
+            padding: 10px;
+            border-radius: 6px;
+        }
+
+        .post-list, .automation-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+
+        .item-card {
+            background: #2a2a2a;
+            padding: 15px;
+            border-radius: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 1px solid var(--border);
+        }
+
+        .item-content { flex-grow: 1; }
+        .item-title { font-weight: bold; margin-bottom: 5px; }
+        .item-meta { font-size: 12px; color: var(--text-secondary); }
+
+        img.thumbnail {
+            width: 50px;
+            height: 50px;
+            border-radius: 4px;
+            object-fit: cover;
+            margin-right: 15px;
+        }
+
+        #log {
+            margin-top: 20px;
+            background: #000;
+            color: #0f0;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            min-height: 100px;
+            max-height: 200px;
+            overflow-y: auto;
+            font-size: 12px;
+        }
+
+        .loading { opacity: 0.5; pointer-events: none; }
+
+        /* ── Login Overlay ────────────────────────────────────────────────── */
+        #loginOverlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(12px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+        }
+        #loginCard {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 40px;
+            width: 100%;
+            max-width: 420px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+            text-align: center;
+        }
+        #loginCard h2 {
+            background: -webkit-linear-gradient(45deg, var(--warning), var(--secondary), var(--primary));
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 8px;
+            font-size: 24px;
+        }
+        #loginCard p {
+            color: var(--text-secondary);
+            margin-bottom: 24px;
+            font-size: 14px;
+        }
+        #loginCard input {
+            width: 100%;
+            padding: 12px 16px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            background: #2a2a2a;
+            color: white;
+            font-size: 15px;
+            margin-bottom: 16px;
+            box-sizing: border-box;
+        }
+        #loginCard button {
+            width: 100%;
+            padding: 12px;
+            font-size: 15px;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+
+<!-- ── Login Overlay ────────────────────────────────────────────────── -->
+<div id="loginOverlay">
+    <div id="loginCard">
+        <h2>🔒 Dashboard Login</h2>
+        <p>Enter your API secret key to access the dashboard.</p>
+        <input type="password" id="loginKeyInput" placeholder="Enter API Secret Key..." onkeydown="if(event.key==='Enter') doLogin()">
+        <button onclick="doLogin()">🚀 Login</button>
+    </div>
+</div>
+
+<div class="container">
+    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
+        <h1 style="margin: 0;">Automations Dashboard</h1>
+        <button onclick="doLogout()" style="background: #444; font-size: 12px; padding: 8px 14px;">🚪 Logout</button>
+    </div>
+
+    <div class="controls" style="display: flex; gap: 10px; flex-wrap: wrap;">
+        <select id="userIdInput" style="padding: 10px; border-radius: 6px; border: 1px solid var(--border); background: #2a2a2a; color: white; min-width: 250px;">
+            <option value="">-- Click Refresh Users --</option>
+        </select>
+        <button onclick="fetchUsers()" style="background: #444;">🔄 Refresh Users</button>
+        <input type="hidden" id="apiKeyInput">
+        <button onclick="loadDashboard()">Load Data</button>
+    </div>
+
+    <!-- Token Expiry Alert Banner (hidden by default, shown by JS after load) -->
+    <div id="tokenAlertBanner" style="display:none; margin-top: 15px;"></div>
+
+    <!-- Analytics Overview -->
+    <div class="card" style="margin-top: 20px; background: rgba(255, 255, 255, 0.05);">
+        <h2 style="margin-bottom: 15px; color: var(--primary);">Analytics Overview</h2>
+        <div style="display: flex; gap: 20px; flex-wrap: wrap; margin-bottom: 20px;">
+            <div style="flex: 1; background: #1a1a1a; padding: 20px; border-radius: 8px; border-left: 4px solid var(--primary); text-align: center;">
+                <div style="font-size: 14px; color: var(--text-secondary);">Webhooks Received</div>
+                <div id="metric-webhooks" style="font-size: 32px; font-weight: bold; margin-top: 5px;">0</div>
+            </div>
+            <div style="flex: 1; background: #1a1a1a; padding: 20px; border-radius: 8px; border-left: 4px solid #28a745; text-align: center;">
+                <div style="font-size: 14px; color: var(--text-secondary);">DMs Sent</div>
+                <div id="metric-dms" style="font-size: 32px; font-weight: bold; margin-top: 5px;">0</div>
+            </div>
+            <div style="flex: 1; background: #1a1a1a; padding: 20px; border-radius: 8px; border-left: 4px solid #fcb045; text-align: center;">
+                <div style="font-size: 14px; color: var(--text-secondary);">Comments Replied</div>
+                <div id="metric-comments" style="font-size: 32px; font-weight: bold; margin-top: 5px;">0</div>
+            </div>
+            <div style="flex: 1; background: #1a1a1a; padding: 20px; border-radius: 8px; border-left: 4px solid #d63384; text-align: center;">
+                <div style="font-size: 14px; color: var(--text-secondary);">Followers Gained</div>
+                <div id="metric-followers" style="font-size: 32px; font-weight: bold; margin-top: 5px;">0</div>
+            </div>
+            <div style="flex: 1; background: #1a1a1a; padding: 20px; border-radius: 8px; border-left: 4px solid #dc3545; text-align: center;">
+                <div style="font-size: 14px; color: var(--text-secondary);">Spam Blocked</div>
+                <div id="metric-spam" style="font-size: 32px; font-weight: bold; margin-top: 5px;">0</div>
+            </div>
+        </div>
+        <div style="font-size: 14px; color: var(--text-secondary); margin-bottom: 10px;">Breakdown by Post ID:</div>
+        <div id="metric-breakdown" style="display: flex; flex-direction: column; gap: 5px; max-height: 150px; overflow-y: auto;">
+            <div class="item-meta">No data yet.</div>
+        </div>
+    </div>
+
+    <div class="grid" style="margin-top: 20px;">
+        <!-- Automations List -->
+        <div class="card">
+            <h2>Active Automations</h2>
+            <div class="automation-list" id="automationsList">
+                <div class="item-meta">Enter credentials and click "Load Data"</div>
+            </div>
+        </div>
+
+        <!-- Create/Edit Form -->
+        <div class="card" id="editorCard">
+            <h2 id="formTitle">Create Automation</h2>
+            <form id="automationForm" onsubmit="saveAutomation(event)">
+                <div class="form-group">
+                    <label>Post ID (Media ID)</label>
+                    <input type="text" id="post_id" required>
+                </div>
+                <div class="form-group">
+                    <label>Nickname <span style="color:var(--text-secondary);font-size:11px;">(internal label for yourself)</span></label>
+                    <input type="text" id="nickname" placeholder="e.g. May Reel Campaign">
+                </div>
+                <div class="form-group">
+                    <label>Trigger Word <span style="color:var(--text-secondary);font-size:11px;">(leave blank = trigger on ANY comment)</span></label>
+                    <input type="text" id="trigger_word" placeholder="e.g. LINK">
+                </div>
+                <div class="form-group">
+                    <label>Direct Message 1 — MSG 01 <span style="color:var(--text-secondary);font-size:11px;">(Initial DM with button)</span></label>
+                    <textarea id="msg_01" rows="2" placeholder="Hey! Click the button below."></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Button Text 1 — BTN 01</label>
+                    <input type="text" id="btn_txt_01" placeholder="SEND ME THE LINK!">
+                </div>
+                <div class="form-group">
+                    <label>Direct Message 2 — MSG 02 <span style="color:var(--text-secondary);font-size:11px;">(Follow-gate prompt)</span></label>
+                    <textarea id="msg_02" rows="2" placeholder="Please follow me to get the link!"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Direct Message 3 — MSG 03 <span style="color:var(--text-secondary);font-size:11px;">(Final link message)</span></label>
+                    <textarea id="msg_03" rows="2" placeholder="Thanks for following! Here is your link:"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Button Text 3 — BTN 03</label>
+                    <input type="text" id="btn_txt_03" placeholder="CLICK HERE">
+                </div>
+                <div class="form-group">
+                    <label>Final Link URL</label>
+                    <input type="url" id="btn_txt_03_link" placeholder="https://...">
+                </div>
+                <div class="form-group">
+                    <label>Public Comment Reply 1 — CMNT 1</label>
+                    <input type="text" id="cmnt_1" placeholder="Sent you a DM! 📩">
+                </div>
+                <div class="form-group">
+                    <label>Public Comment Reply 2 — CMNT 2 <span style="color:var(--text-secondary);font-size:11px;">(optional second reply)</span></label>
+                    <input type="text" id="cmnt_2" placeholder="Check your messages!">
+                </div>
+                
+                <div style="display: flex; gap: 10px; margin-top: 20px;">
+                    <button type="submit" style="flex-grow: 1;">Save Automation</button>
+                    <button type="button" onclick="clearForm()" style="background: #444;">Clear</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- OAuth Logs List -->
+    <div class="card" style="margin-top: 20px;">
+        <h2>Login Tracker (OAuth Logs)</h2>
+        <div style="margin-bottom: 15px;">
+            <button onclick="fetchOAuthLogs()" style="font-size: 12px;">🔄 Refresh Logins</button>
+        </div>
+        <div class="post-list" id="oauthLogsList" style="max-height: 400px;">
+            <div class="item-meta">OAuth logs will appear here.</div>
+        </div>
+    </div>
+
+    <!-- Webhook Logs List -->
+    <div class="card" style="margin-top: 20px;">
+        <h2>Incoming Webhook Logs (Live Tracker)</h2>
+        <div style="margin-bottom: 15px;">
+            <button onclick="fetchLogs()" style="font-size: 12px;">🔄 Refresh Logs</button>
+        </div>
+        <div class="post-list" id="logsList" style="max-height: 400px;">
+            <div class="item-meta">Logs will appear here once webhooks arrive.</div>
+        </div>
+    </div>
+
+    <!-- User Posts List -->
+    <div class="card" style="margin-top: 20px;">
+        <h2>Your Instagram Posts</h2>
+        <div class="post-list" id="postsList">
+            <div class="item-meta">Posts will appear here. Click one to easily create an automation for it.</div>
+        </div>
+    </div>
+
+    <div id="log">System Ready...</div>
+</div>
+
+<script>
+    const API_URL = 'https://instagram-worker.chandrakant-21-07-2003.workers.dev';
+
+    // ── Auth / Login ───────────────────────────────────────────────
+    (function initAuth() {
+        const stored = localStorage.getItem('apiKey');
+        if (stored) {
+            document.getElementById('apiKeyInput').value = stored;
+            document.getElementById('loginOverlay').style.display = 'none';
+        }
+    })();
+
+    function doLogin() {
+        const key = document.getElementById('loginKeyInput').value.trim();
+        if (!key) return alert('Please enter your API key.');
+        localStorage.setItem('apiKey', key);
+        document.getElementById('apiKeyInput').value = key;
+        document.getElementById('loginOverlay').style.display = 'none';
+        log('Logged in successfully.');
+    }
+
+    function doLogout() {
+        localStorage.removeItem('apiKey');
+        document.getElementById('apiKeyInput').value = '';
+        document.getElementById('loginOverlay').style.display = 'flex';
+        document.getElementById('loginKeyInput').value = '';
+        log('Logged out.');
+    }
+
+    function log(message) {
+        const el = document.getElementById('log');
+        const time = new Date().toLocaleTimeString();
+        el.innerHTML = `[${time}] ${message}\n` + el.innerHTML;
+    }
+
+    function getHeaders() {
+        return {
+            'Content-Type': 'application/json',
+            'X-API-Key': document.getElementById('apiKeyInput').value
+        };
+    }
+
+    function getUserId() {
+        return document.getElementById('userIdInput').value;
+    }
+
+    async function loadDashboard() {
+        const userId = getUserId();
+        if (!userId) return alert('Please enter User ID');
+        
+        log(`Loading dashboard for ${userId}...`);
+        await fetchMetrics(); // Fetch metrics first so we can inject them into posts
+        await Promise.all([fetchAutomations(), fetchPosts(), fetchLogs(), fetchOAuthLogs()]);
+        checkTokenAlerts(); // Run after users are loaded
+    }
+
+    async function fetchMetrics() {
+        const userId = getUserId();
+        if (!userId) return;
+        try {
+            const res = await fetch(`${API_URL}/metrics?user_id=${userId}`, { headers: getHeaders() });
+            const data = await res.json();
+            if (data.error) throw new Error(data.error);
+
+            const m = data.data;
+            window.currentMetrics = m;
+            document.getElementById('metric-webhooks').innerText = m.total_webhooks;
+            document.getElementById('metric-dms').innerText = m.total_dms_sent;
+            document.getElementById('metric-comments').innerText = m.total_comments_replied;
+            document.getElementById('metric-followers').innerText = m.total_followers_gained;
+            document.getElementById('metric-spam').innerText = m.total_spam_blocked;
+
+            const breakdownEl = document.getElementById('metric-breakdown');
+            breakdownEl.innerHTML = '';
+            if (!m.breakdown_by_post || m.breakdown_by_post.length === 0) {
+                breakdownEl.innerHTML = '<div class="item-meta">No post-specific data yet.</div>';
+            } else {
+                m.breakdown_by_post.forEach(b => {
+                    const el = document.createElement('div');
+                    el.style.display = 'flex';
+                    el.style.justifyContent = 'space-between';
+                    el.style.padding = '5px 10px';
+                    el.style.background = '#1a1a1a';
+                    el.style.borderRadius = '4px';
+                    el.style.fontSize = '12px';
+                    el.innerHTML = `<span>Post: <strong>${b.post_id}</strong></span> <span>${b.metric_name}: <strong>${b.total}</strong></span>`;
+                    breakdownEl.appendChild(el);
+                });
+            }
+            log(`Loaded analytics metrics.`);
+        } catch (e) {
+            log(`Error fetching metrics: ${e.message}`);
+        }
+    }
+
+    async function fetchOAuthLogs() {
+        try {
+            const res = await fetch(`${API_URL}/oauth-logs`, { headers: getHeaders() });
+            const data = await res.json();
+            
+            if (data.error) throw new Error(data.error);
+
+            const listEl = document.getElementById('oauthLogsList');
+            listEl.innerHTML = '';
+
+            if (data.data.length === 0) {
+                listEl.innerHTML = '<div class="item-meta">No OAuth logins recorded yet.</div>';
+            }
+
+            data.data.forEach(item => {
+                const el = document.createElement('div');
+                el.className = 'item-card';
+                let statusColor = item.status === 'completed' ? '#28a745' : item.status === 'failed' ? '#dc3545' : '#fcb045';
+                let execLogHtml = '';
+                if (item.execution_log) {
+                    try {
+                        const logs = JSON.parse(item.execution_log);
+                        execLogHtml = `<div style="margin-top: 10px; background: #1a1a1a; padding: 10px; border-radius: 4px; border-left: 3px solid var(--primary); font-family: monospace; font-size: 11px;">
+                            <div style="color: var(--text-secondary); margin-bottom: 5px; font-weight: bold;">Execution Trace:</div>
+                            ${logs.map(l => {
+                                let color = l.includes('[ERROR]') ? '#dc3545' : l.includes('[WARN]') ? '#fcb045' : l.includes('[SUCCESS]') ? '#28a745' : '#aaaaaa';
+                                return `<div style="color: ${color}; margin-bottom: 2px;">${l}</div>`;
+                            }).join('')}
+                        </div>`;
+                    } catch(e) {}
+                }
+
+                el.innerHTML = `
+                    <div class="item-content">
+                        <div class="item-title" style="color: ${statusColor}">
+                            [${item.status.toUpperCase()}] Login Attempt
+                        </div>
+                        <div class="item-meta">Time: ${new Date(item.created_at + 'Z').toLocaleString()}</div>
+                        ${item.user_id ? `<div class="item-meta" style="font-family: monospace;">User ID: ${item.user_id}</div>` : ''}
+                        ${item.error_message ? `<div class="item-meta" style="color: #dc3545; margin-top: 5px;">Error: ${item.error_message}</div>` : ''}
+                        ${execLogHtml}
+                    </div>
+                `;
+                listEl.appendChild(el);
+            });
+            log(`Loaded ${data.data.length} oauth logs.`);
+        } catch (err) {
+            log(`Error fetching oauth logs: ${err.message}`);
+        }
+    }
+
+    async function fetchLogs() {
+        try {
+            const res = await fetch(`${API_URL}/logs?user_id=${getUserId()}`, { headers: getHeaders() });
+            const data = await res.json();
+            
+            if (data.error) throw new Error(data.error);
+
+            const listEl = document.getElementById('logsList');
+            listEl.innerHTML = '';
+
+            if (data.data.length === 0) {
+                listEl.innerHTML = '<div class="item-meta">No webhooks received yet. Try commenting on a post!</div>';
+            }
+
+            data.data.forEach(item => {
+                const el = document.createElement('div');
+                el.className = 'item-card';
+                let statusColor = item.status === 'completed' ? '#28a745' : item.status === 'failed' ? '#dc3545' : '#fcb045';
+                let execLogHtml = '';
+                if (item.execution_log) {
+                    try {
+                        const logs = JSON.parse(item.execution_log);
+                        execLogHtml = `<div style="margin-top: 10px; background: #1a1a1a; padding: 10px; border-radius: 4px; border-left: 3px solid var(--primary); font-family: monospace; font-size: 11px;">
+                            <div style="color: var(--text-secondary); margin-bottom: 5px; font-weight: bold;">Execution Trace:</div>
+                            ${logs.map(l => {
+                                let color = l.includes('[ERROR]') ? '#dc3545' : l.includes('[WARN]') ? '#fcb045' : l.includes('[SUCCESS]') ? '#28a745' : '#aaaaaa';
+                                return `<div style="color: ${color}; margin-bottom: 2px;">${l}</div>`;
+                            }).join('')}
+                        </div>`;
+                    } catch(e) {}
+                }
+
+                el.innerHTML = `
+                    <div class="item-content">
+                        <div class="item-title" style="color: ${statusColor}">
+                            [${item.status.toUpperCase()}] ${item.webhook_type}
+                        </div>
+                        <div class="item-meta">Time: ${new Date(item.created_at + 'Z').toLocaleString()}</div>
+                        <div class="item-meta" style="font-family: monospace;">Post ID: ${item.post_id || 'N/A'}</div>
+                        ${item.error_message ? `<div class="item-meta" style="color: #dc3545; margin-top: 5px;">Error: ${item.error_message}</div>` : ''}
+                        
+                        ${execLogHtml}
+
+                        <details style="margin-top: 10px; font-size: 11px; cursor: pointer;">
+                            <summary style="color: var(--primary)">View Raw Payload</summary>
+                            <pre style="background: #111; padding: 10px; overflow-x: auto;">${JSON.stringify(JSON.parse(item.payload), null, 2)}</pre>
+                        </details>
+                    </div>
+                `;
+                listEl.appendChild(el);
+            });
+            log(`Loaded ${data.data.length} webhook logs.`);
+        } catch (err) {
+            log(`Error fetching logs: ${err.message}`);
+        }
+    }
+
+    async function fetchUsers() {
+        try {
+            log('Fetching authenticated users...');
+            const res = await fetch(`${API_URL}/users`, { headers: getHeaders() });
+            const data = await res.json();
+            
+            if (data.error) throw new Error(data.error);
+
+            window.currentUsers = data.data || [];
+
+            const selectEl = document.getElementById('userIdInput');
+            selectEl.innerHTML = '<option value="">-- Select a User --</option>';
+
+            if (data.data && data.data.length > 0) {
+                data.data.forEach(user => {
+                    const option = document.createElement('option');
+                    option.value = user.user_id;
+                    option.text = `${user.name || user.username} (@${user.username}) - ID: ${user.user_id}`;
+                    selectEl.appendChild(option);
+                });
+                log(`Loaded ${data.data.length} authenticated users.`);
+            } else {
+                selectEl.innerHTML = '<option value="">-- No Users Found --</option>';
+            }
+        } catch (err) {
+            log(`Error fetching users: ${err.message}`);
+        }
+    }
+
+    function checkTokenAlerts() {
+        const banner = document.getElementById('tokenAlertBanner');
+        const users = window.currentUsers || [];
+        const selectedUserId = getUserId();
+        const now = new Date();
+        const fiveDaysFromNow = new Date(now.getTime() + 5 * 24 * 60 * 60 * 1000);
+
+        const alerts = [];
+
+        users.forEach(user => {
+            // Only alert for the currently selected user, or all if none selected
+            if (selectedUserId && user.user_id !== selectedUserId) return;
+
+            const expiry = user.token_expiry_date ? new Date(user.token_expiry_date) : null;
+            const status = user.token_refresh_status;
+
+            if (status === 'failed') {
+                alerts.push(`
+                    <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; background: rgba(220,53,69,0.12); border: 1px solid rgba(220,53,69,0.4); border-radius: 8px; padding: 12px 16px; margin-bottom: 8px;">
+                        <div>
+                            <span style="color:#dc3545; font-weight:600;">⚠️ Auto-refresh FAILED for @${user.username}</span>
+                            <div style="font-size:12px; color:#aaa; margin-top:3px;">The daily cron could not refresh this token. Click to retry silently.</div>
+                        </div>
+                        <button onclick="refreshTokenForUser('${user.user_id}', '${user.username}', this)" style="white-space:nowrap; background:#dc3545; color:white; padding:8px 14px; border-radius:6px; font-size:13px; font-weight:600; cursor:pointer;">🔄 Retry Refresh</button>
+                    </div>
+                `);
+            } else if (expiry && expiry <= fiveDaysFromNow) {
+                const daysLeft = Math.ceil((expiry - now) / (1000 * 60 * 60 * 24));
+                alerts.push(`
+                    <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; background: rgba(252,176,69,0.1); border: 1px solid rgba(252,176,69,0.4); border-radius: 8px; padding: 12px 16px; margin-bottom: 8px;">
+                        <div>
+                            <span style="color:#fcb045; font-weight:600;">⏰ Token expiring in ${daysLeft} day(s) for @${user.username}</span>
+                            <div style="font-size:12px; color:#aaa; margin-top:3px;">Click to silently refresh the token now — no login required.</div>
+                        </div>
+                        <button onclick="refreshTokenForUser('${user.user_id}', '${user.username}', this)" style="white-space:nowrap; background:#fcb045; color:#000; padding:8px 14px; border-radius:6px; font-size:13px; font-weight:600; cursor:pointer;">🔄 Refresh Now</button>
+                    </div>
+                `);
+            }
+        });
+
+        if (alerts.length > 0) {
+            banner.innerHTML = alerts.join('');
+            banner.style.display = 'block';
+        } else {
+            banner.style.display = 'none';
+        }
+    }
+
+    async function refreshTokenForUser(userId, username, btn) {
+        const originalText = btn.innerText;
+        btn.disabled = true;
+        btn.innerText = '⏳ Refreshing...';
+        log(`Refreshing token for @${username}...`);
+
+        try {
+            const res = await fetch(`${API_URL}/admin/refresh-token?user_id=${userId}`, {
+                method: 'POST',
+                headers: getHeaders()
+            });
+            const data = await res.json();
+
+            if (data.success) {
+                btn.innerText = '✅ Refreshed!';
+                btn.style.background = '#28a745';
+                btn.style.color = 'white';
+                log(`✅ Token refreshed for @${username}. New expiry: ${new Date(data.new_expiry).toLocaleDateString()}`);
+                // Reload user data to hide the alert
+                setTimeout(() => { fetchUsers(); loadDashboard(); }, 1500);
+            } else {
+                btn.innerText = '❌ Failed';
+                btn.disabled = false;
+                log(`❌ Token refresh failed for @${username}: ${data.error}`);
+            }
+        } catch (err) {
+            btn.innerText = originalText;
+            btn.disabled = false;
+            log(`❌ Error refreshing token: ${err.message}`);
+        }
+    }
+
+    async function fetchAutomations() {
+        try {
+            const res = await fetch(`${API_URL}/automation?user_id=${getUserId()}`, { headers: getHeaders() });
+            const data = await res.json();
+            
+            if (data.error) throw new Error(data.error);
+
+            const listEl = document.getElementById('automationsList');
+            listEl.innerHTML = '';
+
+            if (data.data.length === 0) {
+                listEl.innerHTML = '<div class="item-meta">No automations found. Create one!</div>';
+            }
+
+            data.data.forEach(item => {
+                const el = document.createElement('div');
+                el.className = 'item-card';
+                const isActive = item.is_active !== 0; // default true for existing rows
+                el.dataset.automation = JSON.stringify(item); // safe storage, no inline JSON
+                el.innerHTML = `
+                    <div class="item-content">
+                        <div class="item-title" style="display:flex; align-items:center; gap:8px;">
+                            <span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:${isActive ? '#28a745' : '#dc3545'};"></span>
+                            ${item.nickname || ('Trigger: ' + (item.trigger_word || '(Any)'))}
+                        </div>
+                        <div class="item-meta">Post ID: ${item.post_id.substring(0, 15)}...</div>
+                        <div class="item-meta" style="color:${isActive ? '#28a745' : '#dc3545'};font-size:11px;">${isActive ? '● Active' : '⏸ Paused'}</div>
+                    </div>
+                    <div style="display: flex; gap: 5px; flex-wrap: wrap;">
+                        <button onclick="editAutomationFromCard(this)" style="padding: 5px 10px; font-size: 12px;">Edit</button>
+                        <button onclick="toggleAutomationStatus('${item.post_id}', ${isActive ? 0 : 1}, this)" style="padding: 5px 10px; font-size: 12px; background: ${isActive ? '#6c757d' : '#28a745'};">${isActive ? '⏸ Pause' : '▶ Resume'}</button>
+                        <button onclick="deleteAutomation('${item.post_id}')" class="danger" style="padding: 5px 10px; font-size: 12px;">Del</button>
+                    </div>
+                `;
+                listEl.appendChild(el);
+            });
+            log(`Loaded ${data.data.length} automations.`);
+        } catch (err) {
+            log(`Error fetching automations: ${err.message}`);
+        }
+    }
+
+    async function fetchPosts() {
+        try {
+            const res = await fetch(`${API_URL}/posts?user_id=${getUserId()}`, { headers: getHeaders() });
+            const data = await res.json();
+            
+            if (data.error) throw new Error(data.error);
+
+            const listEl = document.getElementById('postsList');
+            listEl.innerHTML = '';
+
+            data.data.data.forEach(post => {
+                const imgUrl = post.thumbnail_url || post.media_url;
+                const caption = post.caption ? (post.caption.substring(0, 50) + '...') : 'No caption';
+                
+                let metricsHTML = '';
+                if (window.currentMetrics && window.currentMetrics.breakdown_by_post) {
+                    const pMetrics = window.currentMetrics.breakdown_by_post.filter(b => b.post_id === post.id);
+                    if (pMetrics.length > 0) {
+                        const webhooks = pMetrics.find(m => m.metric_name === 'webhook_received')?.total || 0;
+                        const comments = pMetrics.find(m => m.metric_name === 'comment_replied')?.total || 0;
+                        const dms = pMetrics.find(m => m.metric_name === 'dm_sent')?.total || 0;
+                        const followers = pMetrics.find(m => m.metric_name === 'followers_gained')?.total || 0;
+                        const spam = pMetrics.find(m => m.metric_name === 'spam_blocked')?.total || 0;
+
+                        metricsHTML = `
+                        <div style="margin-top: 10px; display: flex; gap: 8px; font-size: 11px; flex-wrap: wrap;">
+                            <div style="background: rgba(131,58,180,0.1); color: #833ab4; padding: 3px 6px; border-radius: 4px; border: 1px solid rgba(131,58,180,0.2);">Webhooks: ${webhooks}</div>
+                            <div style="background: rgba(40, 167, 69, 0.1); color: #28a745; padding: 3px 6px; border-radius: 4px; border: 1px solid rgba(40, 167, 69, 0.2);">Replies: ${comments}</div>
+                            <div style="background: rgba(252, 176, 69, 0.1); color: #fcb045; padding: 3px 6px; border-radius: 4px; border: 1px solid rgba(252, 176, 69, 0.2);">DMs: ${dms}</div>
+                            <div style="background: rgba(214, 51, 132, 0.1); color: #d63384; padding: 3px 6px; border-radius: 4px; border: 1px solid rgba(214, 51, 132, 0.2);">Follows: ${followers}</div>
+                            ${spam > 0 ? `<div style="background: rgba(220,53,69,0.1); color: #dc3545; padding: 3px 6px; border-radius: 4px; border: 1px solid rgba(220,53,69,0.2);">🚫 Spam: ${spam}</div>` : ''}
+                        </div>
+                        `;
+                    }
+                }
+
+                const el = document.createElement('div');
+                el.className = 'item-card';
+                el.innerHTML = `
+                    <img src="${imgUrl}" class="thumbnail" onerror="this.src='https://via.placeholder.com/50'">
+                    <div class="item-content">
+                        <div class="item-title">${post.media_type}</div>
+                        <div class="item-meta">${caption}</div>
+                        <div class="item-meta" style="font-family: monospace; margin-top: 5px;">ID: ${post.id}</div>
+                        ${metricsHTML}
+                    </div>
+                    <button onclick="selectPostForAutomation('${post.id}')" style="padding: 5px 10px;">Select for Automation</button>
+                `;
+                listEl.appendChild(el);
+            });
+            log(`Loaded ${data.data.data.length} posts from Instagram.`);
+        } catch (err) {
+            log(`Error fetching posts: ${err.message}`);
+        }
+    }
+
+    function selectPostForAutomation(postId) {
+        document.getElementById('post_id').value = postId;
+        document.getElementById('post_id').scrollIntoView({ behavior: 'smooth' });
+        log(`Selected post ID: ${postId}`);
+    }
+
+    function editAutomationFromCard(btn) {
+        // Read data from dataset — avoids JSON injection via onclick attribute
+        const card = btn.closest('.item-card');
+        const item = JSON.parse(card.dataset.automation);
+        editAutomation(item);
+    }
+
+    function editAutomation(item) {
+        document.getElementById('formTitle').innerText = 'Edit Automation';
+        const fields = ['post_id', 'nickname', 'trigger_word', 'msg_01', 'btn_txt_01',
+                        'msg_02', 'msg_03', 'btn_txt_03', 'btn_txt_03_link', 'cmnt_1', 'cmnt_2'];
+        fields.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.value = item[id] ?? '';
+        });
+        document.getElementById('post_id').readOnly = true;
+        document.getElementById('editorCard').scrollIntoView({ behavior: 'smooth' });
+        log(`Editing automation for post: ${item.post_id}`);
+    }
+
+    function clearForm() {
+        document.getElementById('automationForm').reset();
+        document.getElementById('formTitle').innerText = 'Create Automation';
+        document.getElementById('post_id').readOnly = false;
+    }
+
+    async function toggleAutomationStatus(postId, newState, btn) {
+        btn.disabled = true;
+        try {
+            const res = await fetch(`${API_URL}/automation?post_id=${postId}&user_id=${getUserId()}`, {
+                method: 'PATCH',
+                headers: getHeaders(),
+                body: JSON.stringify({ is_active: newState })
+            });
+            const data = await res.json();
+            if (data.error) throw new Error(data.error);
+            log(data.message);
+            fetchAutomations();
+        } catch (err) {
+            log(`Toggle failed: ${err.message}`);
+            btn.disabled = false;
+        }
+    }
+
+    async function saveAutomation(e) {
+        e.preventDefault();
+        const payload = { target_user_id: getUserId() };
+        const fields = ['post_id', 'nickname', 'trigger_word', 'msg_01', 'btn_txt_01',
+                        'msg_02', 'msg_03', 'btn_txt_03', 'btn_txt_03_link', 'cmnt_1', 'cmnt_2'];
+        fields.forEach(id => { payload[id] = document.getElementById(id)?.value || null; });
+
+        const isEdit = document.getElementById('post_id').readOnly;
+        const method = isEdit ? 'PATCH' : 'POST';
+        
+        try {
+            log(`Saving automation via ${method}...`);
+            const res = await fetch(`${API_URL}/automation?post_id=${payload.post_id}&user_id=${getUserId()}`, {
+                method: method,
+                headers: getHeaders(),
+                body: JSON.stringify(payload)
+            });
+            
+            const data = await res.json();
+            if (data.error) throw new Error(data.error);
+            
+            log(`Success: ${data.message}`);
+            clearForm();
+            fetchAutomations();
+        } catch (err) {
+            log(`Save failed: ${err.message}`);
+            alert(err.message);
+        }
+    }
+
+    async function deleteAutomation(postId) {
+        if (!confirm('Are you sure you want to delete this automation?')) return;
+        
+        try {
+            log(`Deleting automation for post ${postId}...`);
+            const res = await fetch(`${API_URL}/automation?post_id=${postId}&user_id=${getUserId()}`, {
+                method: 'DELETE',
+                headers: getHeaders()
+            });
+            
+            const data = await res.json();
+            if (data.error) throw new Error(data.error);
+            
+            log(`Deleted successfully.`);
+            fetchAutomations();
+        } catch (err) {
+            log(`Delete failed: ${err.message}`);
+        }
+    }
+</script>
+</body>
+</html>
