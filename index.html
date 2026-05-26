@@ -309,36 +309,36 @@
                     <input type="text" id="trigger_word" placeholder="e.g. LINK">
                 </div>
                 <div class="form-group">
-                    <label>Direct Message 1 — MSG 01 <span style="color:var(--text-secondary);font-size:11px;">(Initial DM with button)</span></label>
-                    <textarea id="msg_01" rows="2" placeholder="Hey! Click the button below."></textarea>
+                    <label>Direct Message 1 — MSG 01 <span style="color:var(--text-secondary);font-size:11px;">(Initial DM with button, max 640 chars)</span></label>
+                    <textarea id="msg_01" rows="2" maxlength="640" placeholder="Hey! Click the button below."></textarea>
                 </div>
                 <div class="form-group">
-                    <label>Button Text 1 — BTN 01</label>
-                    <input type="text" id="btn_txt_01" placeholder="SEND ME THE LINK!">
+                    <label>Button Text 1 — BTN 01 <span style="color:var(--text-secondary);font-size:11px;">(Strict Instagram max 20 chars)</span></label>
+                    <input type="text" id="btn_txt_01" maxlength="20" placeholder="SEND ME THE LINK!">
                 </div>
                 <div class="form-group">
-                    <label>Direct Message 2 — MSG 02 <span style="color:var(--text-secondary);font-size:11px;">(Follow-gate prompt)</span></label>
-                    <textarea id="msg_02" rows="2" placeholder="Please follow me to get the link!"></textarea>
+                    <label>Direct Message 2 — MSG 02 <span style="color:var(--text-secondary);font-size:11px;">(Follow-gate prompt, max 640 chars)</span></label>
+                    <textarea id="msg_02" rows="2" maxlength="640" placeholder="Please follow me to get the link!"></textarea>
                 </div>
                 <div class="form-group">
-                    <label>Direct Message 3 — MSG 03 <span style="color:var(--text-secondary);font-size:11px;">(Final link message)</span></label>
-                    <textarea id="msg_03" rows="2" placeholder="Thanks for following! Here is your link:"></textarea>
+                    <label>Direct Message 3 — MSG 03 <span style="color:var(--text-secondary);font-size:11px;">(Final link message, max 640 chars)</span></label>
+                    <textarea id="msg_03" rows="2" maxlength="640" placeholder="Thanks for following! Here is your link:"></textarea>
                 </div>
                 <div class="form-group">
-                    <label>Button Text 3 — BTN 03</label>
-                    <input type="text" id="btn_txt_03" placeholder="CLICK HERE">
+                    <label>Button Text 3 — BTN 03 <span style="color:var(--text-secondary);font-size:11px;">(Strict Instagram max 20 chars)</span></label>
+                    <input type="text" id="btn_txt_03" maxlength="20" placeholder="CLICK HERE">
                 </div>
                 <div class="form-group">
-                    <label>Final Link URL</label>
-                    <input type="url" id="btn_txt_03_link" placeholder="https://...">
+                    <label>Final Link URL <span style="color:var(--text-secondary);font-size:11px;">(max 2048 chars)</span></label>
+                    <input type="url" id="btn_txt_03_link" maxlength="2048" placeholder="https://...">
                 </div>
                 <div class="form-group">
-                    <label>Public Comment Reply 1 — CMNT 1</label>
-                    <input type="text" id="cmnt_1" placeholder="Sent you a DM! 📩">
+                    <label>Public Comment Reply 1 — CMNT 1 <span style="color:var(--text-secondary);font-size:11px;">(max 2200 chars)</span></label>
+                    <input type="text" id="cmnt_1" maxlength="2200" placeholder="Sent you a DM! 📩">
                 </div>
                 <div class="form-group">
-                    <label>Public Comment Reply 2 — CMNT 2 <span style="color:var(--text-secondary);font-size:11px;">(optional second reply)</span></label>
-                    <input type="text" id="cmnt_2" placeholder="Check your messages!">
+                    <label>Public Comment Reply 2 — CMNT 2 <span style="color:var(--text-secondary);font-size:11px;">(optional second reply, max 2200 chars)</span></label>
+                    <input type="text" id="cmnt_2" maxlength="2200" placeholder="Check your messages!">
                 </div>
                 
                 <div style="display: flex; gap: 10px; margin-top: 20px;">
@@ -847,7 +847,53 @@
         const payload = { target_user_id: getUserId() };
         const fields = ['post_id', 'nickname', 'trigger_word', 'msg_01', 'btn_txt_01',
                         'msg_02', 'msg_03', 'btn_txt_03', 'btn_txt_03_link', 'cmnt_1', 'cmnt_2'];
-        fields.forEach(id => { payload[id] = document.getElementById(id)?.value || null; });
+        fields.forEach(id => { 
+            let val = document.getElementById(id)?.value || null;
+            if (val && typeof val === 'string') {
+                val = val.trim(); // Trim leading/trailing whitespaces in UI
+            }
+            payload[id] = val;
+        });
+
+        // Client-side Validation Checks
+        if (payload.btn_txt_01 && payload.btn_txt_01.length > 20) {
+            alert('First Button Text (BTN 01) cannot exceed 20 characters (Instagram Graph API Limit).');
+            return;
+        }
+        if (payload.btn_txt_03 && payload.btn_txt_03.length > 20) {
+            alert('Final Button Text (BTN 03) cannot exceed 20 characters (Instagram Graph API Limit).');
+            return;
+        }
+        if (payload.msg_01 && payload.msg_01.length > 640) {
+            alert('Direct Message 1 (MSG 01) cannot exceed 640 characters.');
+            return;
+        }
+        if (payload.msg_02 && payload.msg_02.length > 640) {
+            alert('Direct Message 2 (MSG 02) cannot exceed 640 characters.');
+            return;
+        }
+        if (payload.msg_03 && payload.msg_03.length > 640) {
+            alert('Direct Message 3 (MSG 03) cannot exceed 640 characters.');
+            return;
+        }
+        if (payload.btn_txt_03_link && payload.btn_txt_03_link !== '') {
+            if (!payload.btn_txt_03_link.startsWith('http://') && !payload.btn_txt_03_link.startsWith('https://')) {
+                alert('Final Link URL must start with http:// or https://');
+                return;
+            }
+            if (payload.btn_txt_03_link.length > 2048) {
+                alert('Final Link URL cannot exceed 2048 characters.');
+                return;
+            }
+        }
+        if (payload.cmnt_1 && payload.cmnt_1.length > 2200) {
+            alert('Public Comment Reply 1 cannot exceed 2200 characters.');
+            return;
+        }
+        if (payload.cmnt_2 && payload.cmnt_2.length > 2200) {
+            alert('Public Comment Reply 2 cannot exceed 2200 characters.');
+            return;
+        }
 
         const isEdit = document.getElementById('post_id').readOnly;
         const method = isEdit ? 'PATCH' : 'POST';
